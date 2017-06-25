@@ -32,12 +32,13 @@ class WiFiOTAClass {
 public:
   WiFiOTAClass();
 
-  void begin(const char* name, const char* password, OTAStorage& storage);
+  bool begin(const char* name, const char* password, OTAStorage& storage);
   void poll();
 
 private:
-  void pollMdns();
+  bool pollMdns();
   void pollServer();
+  void replyToMdnsRequest(uint16_t requestQType);
   void sendHttpResponse(Client& client, int code, const char* status);
   void flushRequestBody(Client& client, long contentLength);
 
@@ -47,8 +48,10 @@ private:
   OTAStorage* _storage;
   WiFiServer _server;
   WiFiUDP _mdnsSocket;
-
-  uint32_t _lastMdnsResponseTime;
+  uint32_t _lastArduinoServiceResponseTime;
+  
+  int _arduinoServiceRequestLength;
+  int _minimumResolveRequestLength;
 };
 
 extern WiFiOTAClass WiFiOTA;
