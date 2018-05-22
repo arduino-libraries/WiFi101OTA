@@ -440,7 +440,7 @@ void WiFiOTAClass::pollServer()
       return;
     }
 
-    if (_storage == NULL || !_storage->open()) {
+    if (_storage == NULL || !_storage->open(contentLength)) {
       flushRequestBody(client, contentLength);
       sendHttpResponse(client, 500, "Internal Server Error");
       return;
@@ -456,7 +456,7 @@ void WiFiOTAClass::pollServer()
     long read = 0;
 
     while (client.connected() && read < contentLength) {
-      if (client.available()) {
+      while (client.available()) {
         read++;
 
         _storage->write((char)client.read());
@@ -468,14 +468,18 @@ void WiFiOTAClass::pollServer()
     if (read == contentLength) {
       sendHttpResponse(client, 200, "OK");
 
-      delay(250);
+      delay(500);
 
       // apply the update
       _storage->apply();
 
       while (true);
     } else {
+
+      sendHttpResponse(client, 414, "Payload size wrong");
       _storage->clear();
+
+      delay(500);
 
       client.stop();
     }

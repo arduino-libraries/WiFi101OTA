@@ -16,41 +16,28 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include "SDStorage.h"
+#ifndef _SERIALFLASH_STORAGE_H_INCLUDED
+#define _SERIALFLASH_STORAGE_H_INCLUDED
 
-#define UPDATE_FILE "UPDATE.BIN"
+#include <SerialFlash.h>
 
-int SDStorageClass::open(int length)
-{
-  (void)length;
-  _file = SD.open(UPDATE_FILE, FILE_WRITE);
+#include "OTAStorage.h"
 
-  if (!_file) {
-    return 0;
-  }
+#define SERIAL_FLASH_BUFFER_SIZE    64
+#define SERIAL_FLASH_CS             5
 
-  return 1;
-}
+class SerialFlashStorageClass : public OTAStorage {
+public:
+  virtual int open(int length);
+  virtual size_t write(uint8_t);
+  virtual void close();
+  virtual void clear();
+  virtual void apply();
 
-size_t SDStorageClass::write(uint8_t b)
-{
-  return _file.write(b);
-}
+private:
+  SerialFlashFile _file;
+};
 
-void SDStorageClass::close()
-{
-  _file.close();
-}
+extern SerialFlashStorageClass SerialFlashStorage;
 
-void SDStorageClass::clear()
-{
-  SD.remove(UPDATE_FILE);
-}
-
-void SDStorageClass::apply()
-{
-  // just reset, SDU copies the data to flash
-  NVIC_SystemReset();
-}
-
-SDStorageClass SDStorage;
+#endif
