@@ -19,7 +19,6 @@
  */
  
 #include <SPI.h>
-#include <WiFi101.h>
 #include <WiFi101OTA.h>
 
 #include "arduino_secrets.h" 
