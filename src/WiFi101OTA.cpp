@@ -26,6 +26,8 @@
   #define BOARD "mkr1000"
 #elif defined(ARDUINO_SAMD_MKRZERO)
   #define BOARD "mkrzero"
+#elif defined(ARDUINO_SAMD_MKRWIFI1010)
+  #define BOARD "mkrwifi1010"
 #else
   #error "Unsupported board!"
 #endif
@@ -82,7 +84,7 @@ void WiFiOTAClass::begin(const char* name, const char* password, OTAStorage& sto
 
   _server.begin();
 
-  _mdnsSocket.beginMulti(IPAddress(224, 0, 0, 251), 5353);
+  _mdnsSocket.beginMulticast(IPAddress(224, 0, 0, 251), 5353);
 }
 
 void WiFiOTAClass::poll()

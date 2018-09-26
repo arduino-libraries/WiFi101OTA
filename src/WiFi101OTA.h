@@ -21,7 +21,7 @@
 
 #include <Arduino.h>
 
-#include "WiFi101.h"
+#include "WiFiNINA.h"
 #include "WiFiUdp.h"
 
 #include "OTAStorage.h"
