@@ -20,18 +20,6 @@
 
 #include "WiFi101OTA.h"
 
-#if defined(ARDUINO_SAMD_ZERO)
-  #define BOARD "arduino_zero_edbg"
-#elif defined(ARDUINO_SAMD_MKR1000)
-  #define BOARD "mkr1000"
-#elif defined(ARDUINO_SAMD_MKRZERO)
-  #define BOARD "mkrzero"
-#elif defined(ARDUINO_SAMD_MKRWIFI1010)
-  #define BOARD "mkrwifi1010"
-#else
-  #error "Unsupported board!"
-#endif
-
 #define BOARD_LENGTH (sizeof(BOARD) - 1)
 
 static String base64Encode(const String& in)

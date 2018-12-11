@@ -21,13 +21,32 @@
 
 #include <Arduino.h>
 
-#include "WiFiNINA.h"
+#if defined(ARDUINO_SAMD_ZERO)
+  #include "WiFi101.h"
+  #define BOARD "arduino_zero_edbg"
+#elif defined(ARDUINO_SAMD_MKR1000)
+  #include "WiFi101.h"
+  #define BOARD "mkr1000"
+#elif defined(ARDUINO_SAMD_MKRZERO)
+  #include "WiFi101.h"
+  #define BOARD "mkrzero"
+#elif defined(ARDUINO_SAMD_MKRWIFI1010)
+  #include "WiFiNINA.h"
+  #define BOARD "mkrwifi1010"
+#elif defined(ARDUINO_AVR_UNO_WIFI_REV2) || defined(ARDUINO_MEGAAVR_UNO_WIFI_REV2)
+  #include "WiFiNINA.h"
+  #define BOARD "uno2018"
+#else
+  #error "Unsupported board!"
+#endif
+
 #include "WiFiUdp.h"
 
 #include "OTAStorage.h"
 #include "SDStorage.h"
 #include "InternalStorage.h"
 #include "SerialFlashStorage.h"
+#include "NINAStorage.h"
 
 class WiFiOTAClass {
 public:

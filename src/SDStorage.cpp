@@ -20,6 +20,14 @@
 
 #define UPDATE_FILE "UPDATE.BIN"
 
+static inline void reboot() {
+#ifdef __AVR__
+
+#else
+  NVIC_SystemReset();
+#endif
+}
+
 int SDStorageClass::open(int length)
 {
   (void)length;
@@ -50,7 +58,7 @@ void SDStorageClass::clear()
 void SDStorageClass::apply()
 {
   // just reset, SDU copies the data to flash
-  NVIC_SystemReset();
+  reboot();
 }
 
 SDStorageClass SDStorage;

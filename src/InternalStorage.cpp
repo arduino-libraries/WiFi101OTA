@@ -16,6 +16,8 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+#ifndef __AVR__
+
 #include <Arduino.h>
 
 #include "InternalStorage.h"
@@ -119,3 +121,5 @@ long InternalStorageClass::maxSize()
 }
 
 InternalStorageClass InternalStorage;
+
+#endif
