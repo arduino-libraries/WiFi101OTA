@@ -30,6 +30,11 @@ public:
   virtual void close();
   virtual void clear();
   virtual void apply();
+  virtual long maxSize();
+  virtual void download(String url);
+  virtual bool hasDownloadAPI() {
+    return true;
+  }
 
 private:
   WiFiStorageFile* _file;
