@@ -30,6 +30,12 @@ public:
   virtual long maxSize() {
     return ((256 * 1024) - 0x2000);
   }
+  virtual void download(String url) {
+
+  }
+  virtual bool hasDownloadAPI() {
+    return false;
+  }
 };
 
 #endif

@@ -41,10 +41,6 @@ int NINAStorageClass::open(int contentLength)
 
   WiFiStorageFile file = WiFiStorage.open(UPDATE_FILE);
 
-  if (!file) {
-    return 0;
-  }
-
   _file = &file;
 
   return 1;
@@ -70,6 +66,20 @@ void NINAStorageClass::apply()
 {
   WiFiDrv::applyOTA();
   reboot();
+}
+
+void NINAStorageClass::download(String url)
+{
+  WiFiStorage.download(url, "UPDATE.BIN");
+}
+
+long NINAStorageClass::maxSize()
+{
+#ifdef __AVR__
+  return (0xFFFF - 0x3FFF - 0x100);
+#else
+  return ((256 * 1024) - 0x2000);
+#endif
 }
 
 NINAStorageClass NINAStorage;

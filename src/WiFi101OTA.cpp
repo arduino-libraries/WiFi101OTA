@@ -287,13 +287,22 @@ void WiFiOTAClass::pollServer()
     }
 
     long read = 0;
+    String url;
 
     while (client.connected() && read < contentLength) {
       while (client.available()) {
         read++;
-
-        _storage->write((char)client.read());
+        char c = (char)client.read();
+        if (_storage->hasDownloadAPI()) {
+          url += c;
+        } else {
+          _storage->write(c);
+        }
       }
+    }
+
+    if (_storage->hasDownloadAPI()) {
+      _storage->download(url);
     }
 
     _storage->close();
