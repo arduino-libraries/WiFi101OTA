@@ -53,6 +53,7 @@
 #include "InternalStorage.h"
 #include "SerialFlashStorage.h"
 #include "NINAStorage.h"
+#include "NINAStorageRaw.h"
 
 class WiFiOTAClass {
 public:

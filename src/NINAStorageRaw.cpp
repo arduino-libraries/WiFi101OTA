@@ -16,7 +16,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#include "NINAStorage.h"
+#include "NINAStorageRaw.h"
 
 #ifdef HAS_NINA
 
@@ -24,7 +24,7 @@
 
 static inline void reboot() {
 #ifdef __AVR__
-    /* Write boot request */
+  /* Write boot request */
   USERROW.USERROW31 = 0xEB;
   _PROTECTED_WRITE_SPM(NVMCTRL.CTRLA, NVMCTRL_CMD_PAGEERASEWRITE_gc);
   while(NVMCTRL.STATUS & NVMCTRL_EEBUSY_bm);
@@ -35,7 +35,7 @@ static inline void reboot() {
 #endif
 }
 
-int NINAStorageClass::open(int contentLength)
+int NINAStorageRawClass::open(int contentLength)
 {
   if (WiFiStorage.exists(UPDATE_FILE)) {
     WiFiStorage.remove(UPDATE_FILE);
@@ -46,34 +46,47 @@ int NINAStorageClass::open(int contentLength)
   return 1;
 }
 
-size_t NINAStorageClass::write(uint8_t b)
+static int buffer_index = 0;
+static uint8_t buffer[2048];
+
+size_t NINAStorageRawClass::write(uint8_t b)
 {
-  int ret = _file->write(&b, 1);
-  return ret;
+  // buffer bytes in 2Kbytes chunks, otherwise this thing is slow as hell
+  if (buffer_index < sizeof(buffer)) {
+    buffer[buffer_index] = b;
+    buffer_index++;
+  }
+  if (buffer_index >= sizeof(buffer)) {
+    _file->write(buffer, sizeof(buffer));
+    buffer_index = 0;
+  }
+  return 1;
 }
 
-void NINAStorageClass::close()
+void NINAStorageRawClass::close()
 {
+  if (buffer_index > 0) {
+    _file->write(buffer, buffer_index);
+  }
   _file->close();
 }
 
-void NINAStorageClass::clear()
+void NINAStorageRawClass::clear()
 {
   WiFiStorage.remove(UPDATE_FILE);
 }
 
-void NINAStorageClass::apply()
+void NINAStorageRawClass::apply()
 {
-  WiFiDrv::applyOTA();
   reboot();
 }
 
-void NINAStorageClass::download(String url)
+void NINAStorageRawClass::download(String url)
 {
   WiFiStorage.download(url, "UPDATE.BIN");
 }
 
-long NINAStorageClass::maxSize()
+long NINAStorageRawClass::maxSize()
 {
 #ifdef __AVR__
   return (0xFFFF - 0x3FFF - 0x100);
@@ -82,6 +95,6 @@ long NINAStorageClass::maxSize()
 #endif
 }
 
-NINAStorageClass NINAStorage;
+NINAStorageRawClass NINAStorageRaw;
 
 #endif
