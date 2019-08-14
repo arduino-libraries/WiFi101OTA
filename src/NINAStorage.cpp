@@ -18,6 +18,8 @@
 
 #include "NINAStorage.h"
 
+#ifdef HAS_NINA
+
 #define UPDATE_FILE "/fs/UPDATE.BIN"
 
 static inline void reboot() {
@@ -83,3 +85,5 @@ long NINAStorageClass::maxSize()
 }
 
 NINAStorageClass NINAStorage;
+
+#endif

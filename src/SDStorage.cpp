@@ -18,6 +18,8 @@
 
 #include "SDStorage.h"
 
+#ifdef HAS_SD
+
 #define UPDATE_FILE "UPDATE.BIN"
 
 static inline void reboot() {
@@ -62,3 +64,5 @@ void SDStorageClass::apply()
 }
 
 SDStorageClass SDStorage;
+
+#endif

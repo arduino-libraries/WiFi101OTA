@@ -19,7 +19,17 @@
 #ifndef _SD_STORAGE_H_INCLUDED
 #define _SD_STORAGE_H_INCLUDED
 
-#include <SD.h>
+#ifdef __has_include
+  #if __has_include(<SD.h>)
+    #include <SD.h>
+    #define HAS_SD 1
+  #endif
+#else
+    #include <SD.h>
+    #define HAS_SD 1
+#endif
+
+#ifdef HAS_SD
 
 #include "OTAStorage.h"
 
@@ -41,4 +51,5 @@ private:
 
 extern SDStorageClass SDStorage;
 
+#endif
 #endif

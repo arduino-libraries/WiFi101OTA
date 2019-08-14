@@ -19,7 +19,17 @@
 #ifndef _SERIALFLASH_STORAGE_H_INCLUDED
 #define _SERIALFLASH_STORAGE_H_INCLUDED
 
-#include <SerialFlash.h>
+#ifdef __has_include
+  #if __has_include(<SerialFlash.h>)
+    #include <SerialFlash.h>
+    #define HAS_SERIALFLASH 1
+  #endif
+#else
+    #include <SerialFlash.h>
+    #define HAS_SERIALFLASH 1
+#endif
+
+#ifdef HAS_SERIALFLASH
 
 #include "OTAStorage.h"
 
@@ -40,4 +50,5 @@ private:
 
 extern SerialFlashStorageClass SerialFlashStorage;
 
+#endif
 #endif

@@ -18,6 +18,8 @@
 
 #include "SerialFlashStorage.h"
 
+#ifdef HAS_SERIALFLASH
+
 #define UPDATE_FILE "UPDATE.BIN"
 
 static inline void reboot() {
@@ -75,3 +77,5 @@ void SerialFlashStorageClass::apply()
 }
 
 SerialFlashStorageClass SerialFlashStorage;
+
+#endif

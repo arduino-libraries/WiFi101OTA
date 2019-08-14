@@ -19,7 +19,17 @@
 #ifndef _NINA_STORAGE_H_INCLUDED
 #define _NINA_STORAGE_H_INCLUDED
 
-#include <WiFiStorage.h>
+#ifdef __has_include
+  #if __has_include(<WiFiStorage.h>)
+    #include <WiFiStorage.h>
+    #define HAS_NINA 1
+  #endif
+#else
+    #include <WiFiStorage.h>
+    #define HAS_NINA 1
+#endif
+
+#ifdef HAS_NINA
 
 #include "OTAStorage.h"
 
@@ -42,4 +52,5 @@ private:
 
 extern NINAStorageClass NINAStorage;
 
+#endif
 #endif
