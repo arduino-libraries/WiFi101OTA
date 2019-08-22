@@ -18,7 +18,7 @@
 
 #include <Arduino.h>
 
-#include "WiFi101OTA.h"
+#include "Arduino_WiFiOTA.h"
 
 #define BOARD_LENGTH (sizeof(BOARD) - 1)
 

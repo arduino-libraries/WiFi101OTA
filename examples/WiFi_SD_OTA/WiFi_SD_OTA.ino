@@ -21,7 +21,7 @@
  
 #include <SPI.h>
 #include <SD.h>
-#include <WiFi101OTA.h>
+#include <Arduino_WiFiOTA.h>
 #include <SDU.h>
 
 #include "arduino_secrets.h" 

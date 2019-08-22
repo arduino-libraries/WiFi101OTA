@@ -19,7 +19,7 @@
  */
  
 #include <SPI.h>
-#include <WiFi101OTA.h>
+#include <Arduino_WiFiOTA.h>
 
 #include "arduino_secrets.h" 
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
