@@ -12,6 +12,7 @@ WiFiOTA	KEYWORD1
 InternalStorage	KEYWORD1
 SDStorage	KEYWORD1
 NINAStorage	KEYWORD1
+NINAStorageRaw	KEYWORD1
 SerialFlashStorage	KEYWORD1
 
 #######################################
