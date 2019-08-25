@@ -18,12 +18,19 @@
  modified 16 January 2017
  by Sandeep Mistry
  */
- 
-#include <SPI.h>
-#include <SD.h>
-#include <WiFi101.h>
-#include <WiFi101OTA.h>
-#include <SDU.h>
+
+#include <Arduino_WiFiOTA.h>
+
+// SAMD boards use a second stage bootloader approach and have enough RAM to retrieve the update firmware by themselves
+// Uno WiFi Rev2 needs some little help, so the Nina module takes care of dowloading and flashing the board
+
+#ifdef ARDUINO_ARCH_SAMD
+#include <SNU.h>
+#define STORAGE   NINAStorageRaw
+#else
+#define STORAGE   NINAStorage
+#endif
+
 
 #include "arduino_secrets.h" 
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
@@ -36,15 +43,6 @@ int status = WL_IDLE_STATUS;
 void setup() {
   //Initialize serial:
   Serial.begin(9600);
-
-  // setup SD card
-  Serial.print("Initializing SD card...");
-  if (!SD.begin(SDCARD_SS_PIN)) {
-    Serial.println("initialization failed!");
-    // don't continue:
-    while (true);
-  }
-  Serial.println("initialization done.");
 
   // check for the presence of the shield:
   if (WiFi.status() == WL_NO_SHIELD) {
@@ -61,8 +59,8 @@ void setup() {
     status = WiFi.begin(ssid, pass);
   }
 
-  // start the WiFi OTA library with SD based storage
-  WiFiOTA.begin("Arduino", "password", SDStorage);
+  // start the WiFi OTA library with Nina based storage
+  WiFiOTA.begin("Arduino", "password", STORAGE);
 
   // you're connected now, so print out the status:
   printWifiStatus();

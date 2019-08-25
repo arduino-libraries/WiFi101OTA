@@ -16,39 +16,41 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _SERIALFLASH_STORAGE_H_INCLUDED
-#define _SERIALFLASH_STORAGE_H_INCLUDED
+#ifndef _NINA_STORAGE_H_INCLUDED
+#define _NINA_STORAGE_H_INCLUDED
 
 #ifdef __has_include
-  #if __has_include(<SerialFlash.h>)
-    #include <SerialFlash.h>
-    #define HAS_SERIALFLASH 1
+  #if __has_include(<WiFiStorage.h>)
+    #include <WiFiStorage.h>
+    #define HAS_NINA 1
   #endif
 #else
-    #include <SerialFlash.h>
-    #define HAS_SERIALFLASH 1
+    #include <WiFiStorage.h>
+    #define HAS_NINA 1
 #endif
 
-#ifdef HAS_SERIALFLASH
+#ifdef HAS_NINA
 
 #include "OTAStorage.h"
 
-#define SERIAL_FLASH_BUFFER_SIZE    64
-#define SERIAL_FLASH_CS             5
-
-class SerialFlashStorageClass : public OTAStorage {
+class NINAStorageClass : public OTAStorage {
 public:
   virtual int open(int length);
   virtual size_t write(uint8_t);
   virtual void close();
   virtual void clear();
   virtual void apply();
+  virtual long maxSize();
+  virtual void download(String url);
+  virtual bool hasDownloadAPI() {
+    return true;
+  }
 
 private:
-  SerialFlashFile _file;
+  WiFiStorageFile* _file;
 };
 
-extern SerialFlashStorageClass SerialFlashStorage;
+extern NINAStorageClass NINAStorage;
 
 #endif
 #endif

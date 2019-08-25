@@ -16,42 +16,41 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef _WIFI101_OTA_H_INCLUDED
-#define _WIFI101_OTA_H_INCLUDED
+#ifndef _NINA_STORAGERAW_H_INCLUDED
+#define _NINA_STORAGERAW_H_INCLUDED
 
-#include <Arduino.h>
+#ifdef __has_include
+  #if __has_include(<WiFiStorage.h>)
+    #include <WiFiStorage.h>
+    #define HAS_NINA 1
+  #endif
+#else
+    #include <WiFiStorage.h>
+    #define HAS_NINA 1
+#endif
 
-#include "WiFi101.h"
-#include "WiFiUdp.h"
+#ifdef HAS_NINA
 
 #include "OTAStorage.h"
-#include "SDStorage.h"
-#include "InternalStorage.h"
-#include "SerialFlashStorage.h"
 
-class WiFiOTAClass {
+class NINAStorageRawClass : public OTAStorage {
 public:
-  WiFiOTAClass();
-
-  void begin(const char* name, const char* password, OTAStorage& storage);
-  void poll();
+  virtual int open(int length);
+  virtual size_t write(uint8_t);
+  virtual void close();
+  virtual void clear();
+  virtual void apply();
+  virtual long maxSize();
+  virtual void download(String url);
+  virtual bool hasDownloadAPI() {
+    return false;
+  }
 
 private:
-  void pollMdns();
-  void pollServer();
-  void sendHttpResponse(Client& client, int code, const char* status);
-  void flushRequestBody(Client& client, long contentLength);
-
-private:
-  String _name;
-  String _expectedAuthorization;
-  OTAStorage* _storage;
-  WiFiServer _server;
-  WiFiUDP _mdnsSocket;
-
-  uint32_t _lastMdnsResponseTime;
+  WiFiStorageFile* _file;
 };
 
-extern WiFiOTAClass WiFiOTA;
+extern NINAStorageRawClass NINAStorageRaw;
 
+#endif
 #endif

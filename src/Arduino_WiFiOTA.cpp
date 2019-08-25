@@ -18,17 +18,7 @@
 
 #include <Arduino.h>
 
-#include "WiFi101OTA.h"
-
-#if defined(ARDUINO_SAMD_ZERO)
-  #define BOARD "arduino_zero_edbg"
-#elif defined(ARDUINO_SAMD_MKR1000)
-  #define BOARD "mkr1000"
-#elif defined(ARDUINO_SAMD_MKRZERO)
-  #define BOARD "mkrzero"
-#else
-  #error "Unsupported board!"
-#endif
+#include "Arduino_WiFiOTA.h"
 
 #define BOARD_LENGTH (sizeof(BOARD) - 1)
 
@@ -82,7 +72,7 @@ void WiFiOTAClass::begin(const char* name, const char* password, OTAStorage& sto
 
   _server.begin();
 
-  _mdnsSocket.beginMulti(IPAddress(224, 0, 0, 251), 5353);
+  _mdnsSocket.beginMulticast(IPAddress(224, 0, 0, 251), 5353);
 }
 
 void WiFiOTAClass::poll()
@@ -297,13 +287,22 @@ void WiFiOTAClass::pollServer()
     }
 
     long read = 0;
+    String url;
 
     while (client.connected() && read < contentLength) {
       while (client.available()) {
         read++;
-
-        _storage->write((char)client.read());
+        char c = (char)client.read();
+        if (_storage->hasDownloadAPI()) {
+          url += c;
+        } else {
+          _storage->write(c);
+        }
       }
+    }
+
+    if (_storage->hasDownloadAPI()) {
+      _storage->download(url);
     }
 
     _storage->close();
