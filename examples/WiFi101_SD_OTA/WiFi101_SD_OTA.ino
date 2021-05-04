@@ -1,9 +1,9 @@
 /*
 
  This example connects to an WPA encrypted WiFi network.
- Then it prints the  MAC address of the Wifi shield,
+ Then it prints the MAC address of the WiFi shield,
  the IP address obtained, and other network details.
- It then polls for sketch updates over WiFi, sketches
+ It then polls for sketch updates over WiFi. Sketches
  can be updated by selecting a network port from within
  the Arduino IDE: Tools -> Port -> Network Ports ...
 
@@ -27,7 +27,7 @@
 
 #include "arduino_secrets.h" 
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
-/////// Wifi Settings ///////
+/////// WiFi Settings ///////
 char ssid[] = SECRET_SSID;      // your network SSID (name)
 char pass[] = SECRET_PASS;   // your network password
 
@@ -53,7 +53,7 @@ void setup() {
     while (true);
   }
 
-  // attempt to connect to Wifi network:
+  // attempt to connect to WiFi network:
   while ( status != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);

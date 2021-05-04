@@ -6,7 +6,7 @@
 image:https://github.com/{repository-owner}/{repository-name}/actions/workflows/spell-check.yml/badge.svg["Spell Check status", link="https://github.com/{repository-owner}/{repository-name}/actions/workflows/spell-check.yml"]
 
 This library allows you to update sketches on your board over WiFi.
-It requires an Arduino/Genuino SAMD board like the Zero and MKR1000.
+It requires an Arduino SAMD board like the Zero or MKR1000.
 
 For more information about this library please visit us at
 https://www.arduino.cc/en/Reference/WiFi101OTA
