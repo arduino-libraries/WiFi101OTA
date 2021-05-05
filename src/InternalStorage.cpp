@@ -107,7 +107,7 @@ void InternalStorageClass::clear()
 
 void InternalStorageClass::apply()
 {
-  // disable interrupts, as vector table will be erase during flash sequence
+  // disable interrupts, as vector table will be erased during flash sequence
   noInterrupts();
 
   copyFlashAndReset(SKETCH_START_ADDRESS, STORAGE_START_ADDRESS, MAX_PARTIONED_SKETCH_SIZE);
