@@ -1,5 +1,7 @@
 # WiFi101 OTA library
 
+## Methods
+
 ### `WiFiOTA.begin()`
 
 #### Description
