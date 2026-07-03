@@ -32,34 +32,152 @@
 
 #define BOARD_LENGTH (sizeof(BOARD) - 1)
 
+// Important RFC's for reference:
+// - DNS request and response: http://www.ietf.org/rfc/rfc1035.txt
+// - Multicast DNS: http://www.ietf.org/rfc/rfc6762.txt
+
+const uint8_t _REQUEST_HEADER[] PROGMEM = {
+  0x00, 0x00, // Transaction ID = 0
+  0x00, 0x00, // Flags = None
+  0x00, 0x01, // Questions = 1 (these 2 bytes are ignored)
+  0x00, 0x00, // Answer RRs = 0
+  0x00, 0x00, // Authority RRs = 0
+  0x00, 0x00  // Additional RRs = 0 (these 2 bytes are ignored)
+};
+
+const uint8_t _ARDUINO_SERVICE_REQUEST[] PROGMEM = {
+  0x08,
+  0x5f, 0x61, 0x72, 0x64, 0x75, 0x69, 0x6e, 0x6f, // _arduino
+  0x04,
+  0x5f, 0x74, 0x63, 0x70,                         // _tcp
+  0x05,
+  0x6c, 0x6f, 0x63, 0x61, 0x6c,                   // local
+  0x00,
+  0x00, 0x0c,                                     // Type = 12 (PTR record)
+  0x00, 0x01                                      // Class = 1 (Internet)
+};
+
+const uint8_t _ARDUINO_SERVICE_RESPONSE_HEADER[] PROGMEM = {
+  0x00, 0x00, // Transaction ID = 0
+  0x84, 0x00, // Flags = Response + Authoritative Answer
+  0x00, 0x00, // Questions = 0
+  0x00, 0x04, // Answers = 4
+  0x00, 0x00, // Nameserver Records = 0
+  0x00, 0x01  // Additional Records = 1
+};
+
+const uint8_t _ADDRESS_RESPONSE_HEADER[] PROGMEM = {
+  0x00, 0x00, // Transaction ID = 0
+  0x84, 0x00, // Flags = Response + Authoritative Answer
+  0x00, 0x00, // Questions = 0
+  0x00, 0x01, // Answers = 1
+  0x00, 0x00, // Nameserver Records = 0
+  0x00, 0x01  // Additional Records = 1
+};
+
+const uint8_t _PTR_RECORD[] PROGMEM = {
+  0x08,
+  0x5f, 0x61, 0x72, 0x64, 0x75, 0x69, 0x6e, 0x6f, // _arduino
+  0x04,
+  0x5f, 0x74, 0x63, 0x70,                         // _tcp
+  0x05,
+  0x6c, 0x6f, 0x63, 0x61, 0x6c,                   // local
+  0x00,
+  0x00, 0x0c,                                     // Type = 12 (PTR record)
+  0x00, 0x01,                                     // Class = 1 (Internet)
+  0x00, 0x00, 0x0E, 0x10,                         // TTL = 3600 seconds
+  0x00, 0x00                                      // Record Length (to be filled in later)
+  // ...                                          // Record Data (to be appended later)
+};
+
+const uint8_t _TXT_RECORD[] PROGMEM = {
+  // ...                                          // Name (to be prepended later)
+  0x00, 0x10,                                     // Type = 16 (TXT record)
+  0x80, 0x01,                                     // Class = 1 (Internet, with cache flush bit)
+  0x00, 0x00, 0x0E, 0x10,                         // TTL = 3600 seconds
+  0x00, 0x00                                      // Record Length (to be filled in later)
+  // ...                                          // Record Data (to be appended later)
+};
+
+const uint8_t _SRV_RECORD[] PROGMEM = {
+  // ...                                          // Name (to be prepended later)
+  0x00, 0x21,                                     // Type = 16 (SRV record)
+  0x80, 0x01,                                     // Class = 1 (Internet, with cache flush bit)
+  0x00, 0x00, 0x0E, 0x10,                         // TTL = 3600 seconds
+  0x00, 0x00,                                     // Record Length (to be filled in later)
+  0x00, 0x00,                                     // Record Priority = 0
+  0x00, 0x00,                                     // Record Weight = 0
+  0xff, 0x00                                      // Record Port = 65280
+  // ...                                          // Record Target (to be appended later)
+};
+
+// Generate positive response for IPV4 address
+const uint8_t _A_RECORD[] PROGMEM = {
+  // ...                                          // Name (to be prepended later)
+  0x00, 0x01,                                     // Type = 1 (A record/IPV4 address)
+  0x80, 0x01,                                     // Class = 1 (Internet)
+  0x00, 0x00, 0x0E, 0x10,                         // TTL = 3600 seconds
+  0x00, 0x04,                                     // Record Length = 4 bytes
+  0x00, 0x00, 0x00, 0x00                          // Record Data (to be filled in later)
+};
+
+// Generate negative response for IPV6 address (CC3000 doesn't support IPV6)
+const uint8_t _NSEC_RECORD[] PROGMEM = {
+  // ...                                          // Name (to be prepended later)
+  0x00, 0x2F,                                     // Type = 47 (NSEC, overloaded by MDNS)
+  0x80, 0x01,                                     // Class = 1 (Internet, with cache flush bit)
+  0x00, 0x00, 0x0E, 0x10,                         // TTL = 3600 seconds
+  0x00, 0x08,                                     // Record Length
+  0xC0, 0x0C,                                     // Next Domain = Pointer to FQDN
+  0x00,                                           // Block Number = 0
+  0x04,                                           // Bitmap Length = 4 bytes
+  0x40, 0x00, 0x00, 0x00                          // Bitmap Value = Only first bit (A record/IPV4) is set
+};
+
+const uint8_t _ARDUINO_DOMAIN[] PROGMEM = {
+  0x08,
+  0x5f, 0x61, 0x72, 0x64, 0x75, 0x69, 0x6e, 0x6f, // _arduino
+  0x04,
+  0x5f, 0x74, 0x63, 0x70,                         // _tcp
+  0x05,
+  0x6c, 0x6f, 0x63, 0x61, 0x6c,                   // local
+  0x00
+};
+
+const uint8_t _DOMAIN[] PROGMEM = {
+  0x05,
+  0x6c, 0x6f, 0x63, 0x61, 0x6c,                   // local
+  0x00
+};
+
 static String base64Encode(const String& in)
 {
-  static const char* CODES = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  static const char* _CODES = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
   int b;
   String out;
   out.reserve((in.length()) * 4 / 3);
-  
+
   for (unsigned int i = 0; i < in.length(); i += 3) {
     b = (in.charAt(i) & 0xFC) >> 2;
-    out += CODES[b];
+    out += _CODES[b];
 
     b = (in.charAt(i) & 0x03) << 4;
     if (i + 1 < in.length()) {
       b |= (in.charAt(i + 1) & 0xF0) >> 4;
-      out += CODES[b];
+      out += _CODES[b];
       b = (in.charAt(i + 1) & 0x0F) << 2;
       if (i + 2 < in.length()) {
          b |= (in.charAt(i + 2) & 0xC0) >> 6;
-         out += CODES[b];
+         out += _CODES[b];
          b = in.charAt(i + 2) & 0x3F;
-         out += CODES[b];
+         out += _CODES[b];
       } else {
-        out += CODES[b];
+        out += _CODES[b];
         out += '=';
       }
     } else {
-      out += CODES[b];
+      out += _CODES[b];
       out += "==";
     }
   }
@@ -70,19 +188,39 @@ static String base64Encode(const String& in)
 WiFiOTAClass::WiFiOTAClass() :
   _storage(NULL),
   _server(65280),
-  _lastMdnsResponseTime(0)
+  _arduinoServiceRequestLength(0),
+  _minimumResolveRequestLength(0),
+  _lastArduinoServiceResponseTime(0)
 {
 }
 
-void WiFiOTAClass::begin(const char* name, const char* password, OTAStorage& storage)
+bool WiFiOTAClass::begin(const char* name, const char* password, OTAStorage& storage)
 {
+  uint8_t nameLength = strlen(name);
+
+  if (nameLength > 255) {
+    // Can only handle names that are upto 255 chars in length
+    return false;
+  }
+
   _name = name;
+  _name.toLowerCase();
   _expectedAuthorization = "Basic " + base64Encode("arduino:" + String(password));
   _storage = &storage;
 
+  _arduinoServiceRequestLength = sizeof(_REQUEST_HEADER) + sizeof(_ARDUINO_SERVICE_REQUEST);
+  _minimumResolveRequestLength = sizeof(_REQUEST_HEADER) + 1 + nameLength + sizeof(_DOMAIN) + 4;
+
+  // Start the HTTP server
   _server.begin();
 
-  _mdnsSocket.beginMulti(IPAddress(224, 0, 0, 251), 5353);
+  // Open the MDNS UDP listening socket on port 5353 with multicast address
+  // 224.0.0.251 (0xE00000FB)
+  if (!_mdnsSocket.beginMulticast(IPAddress(224, 0, 0, 251), 5353)) {
+    return false;
+  }
+
+  return true;
 }
 
 void WiFiOTAClass::poll()
@@ -91,100 +229,118 @@ void WiFiOTAClass::poll()
   pollServer();
 }
 
-void WiFiOTAClass::pollMdns()
+bool WiFiOTAClass::pollMdns()
 {
   int packetLength = _mdnsSocket.parsePacket();
 
-  if (packetLength <= 0) {
-    return;
+  int requestSize = 0;
+
+  // Check if the parsed packet is an expected request length
+  if (packetLength == _arduinoServiceRequestLength) {
+    requestSize = _arduinoServiceRequestLength;
+  } else if (packetLength >= _minimumResolveRequestLength) {
+    requestSize = _minimumResolveRequestLength;
   }
 
-  const byte ARDUINO_SERVICE_REQUEST[37] = {
-    0x00, 0x00, // transaction id
-    0x00, 0x00, // flags
-    0x00, 0x01, // questions
-    0x00, 0x00, // answer RRs
-    0x00, 0x00, // authority RRs
-    0x00, 0x00, // additional RRs
-    0x08,
-    0x5f, 0x61, 0x72, 0x64, 0x75, 0x69, 0x6e, 0x6f, // _arduino
-    0x04, 
-    0x5f, 0x74, 0x63, 0x70, // _tcp
-    0x05,
-    0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x00, // local
-    0x00, 0x0c, // PTR
-    0x00, 0x01 // Class IN
-  };
-
-  if (packetLength != sizeof(ARDUINO_SERVICE_REQUEST)) {
-    while (packetLength) {
-      if (_mdnsSocket.available()) {
-        packetLength--;
-        _mdnsSocket.read();
-      }
+  if (!requestSize) {
+    // It is not, read the full packet in and drop data
+    while(_mdnsSocket.available()) {
+      _mdnsSocket.read();
     }
-    return;
+
+    return false;
   }
 
-  byte request[packetLength];
+  // Read up to the minimum request length
+  uint8_t request[requestSize];
+  _mdnsSocket.read(request, requestSize);
 
-  _mdnsSocket.read(request, sizeof(request));
-
-  if (memcmp(&request[2], &ARDUINO_SERVICE_REQUEST[2], packetLength - 2) != 0) {
-    return;
+  // Read the rest of the packet in and drop data
+  while(_mdnsSocket.available()) {
+    _mdnsSocket.read();
   }
 
-  if ((millis() - _lastMdnsResponseTime) < 1000) {
-    // ignore request
-    return;
+  // Check request header
+  if (memcmp_P(request, _REQUEST_HEADER, 4) != 0 || memcmp_P(&request[6], &_REQUEST_HEADER[6], 4) != 0) {
+    return false;
   }
-  _lastMdnsResponseTime = millis();
 
-  _mdnsSocket.beginPacket(IPAddress(224, 0, 0, 251), 5353);
+  // Determine request type
+  if (packetLength == _arduinoServiceRequestLength && memcmp_P(&request[sizeof(_REQUEST_HEADER)], _ARDUINO_SERVICE_REQUEST, sizeof(_ARDUINO_SERVICE_REQUEST)) == 0) {
+    // Arduino Service Request
+    if ((millis() - _lastArduinoServiceResponseTime) < 1000) {
+      // Ignore this service request, too frequent
+      return false;
+    }
 
-  const byte responseHeader[] = {
-    0x00, 0x00, // transaction id
-    0x84, 0x00, // flags
-    0x00, 0x00, // questions
-    0x00, 0x04, // answers RRs
-    0x00, 0x00, // authority RRs
-    0x00, 0x00  // additional RRS
-  };
-  _mdnsSocket.write(responseHeader, sizeof(responseHeader));
+    _lastArduinoServiceResponseTime = millis();
+    replyToMdnsRequest(0x000c);
+  } else {
+    // Address Request
 
-  const byte ptrRecordStart[] = {
-    0x08,
-    '_', 'a', 'r', 'd', 'u', 'i', 'n', 'o',
+    // Define labels for comparison
+    uint8_t nameLength = _name.length();
+
+    uint8_t nameLabel[1 + nameLength];
+    nameLabel[0] = nameLength;
+    memcpy(&nameLabel[1], _name.c_str(), nameLength);
+
+    uint8_t fqdnLabels[sizeof(nameLabel) + sizeof(_DOMAIN)];
+    memcpy(&fqdnLabels[0], nameLabel, sizeof(nameLabel));
+    memcpy_P(&fqdnLabels[sizeof(nameLabel)], _DOMAIN, sizeof(_DOMAIN));
     
-    0x04,
-    '_', 't', 'c', 'p',
+    // Extract type and class
+    uint16_t requestQType;
+    uint16_t requestQClass;
+    memcpy(&requestQType, &request[_minimumResolveRequestLength - 4], sizeof(requestQType));
+    memcpy(&requestQClass, &request[_minimumResolveRequestLength - 2], sizeof(requestQClass));
+    
+    requestQType = _ntohs(requestQType);
+    requestQClass = _ntohs(requestQClass);
 
-    0x05,
-    'l', 'o', 'c', 'a', 'l',
-    0x00,
+    // Check the requested address is for me
+    if (memcmp(&request[sizeof(_REQUEST_HEADER)], fqdnLabels, sizeof(fqdnLabels)) == 0 && requestQClass == 0x0001) {
+      replyToMdnsRequest(requestQType);
+    }
+  }
+}
 
-    0x00, 0x0c, // PTR
-    0x00, 0x01, // class IN
-    0x00, 0x00, 0x11, 0x94, // TTL
+void WiFiOTAClass::replyToMdnsRequest(uint16_t requestQType)
+{
+  // Define labels
+  uint8_t nameLength = _name.length();
 
-    0x00, (byte)(_name.length() + 3), // length
-    (byte)_name.length()
-  };
+  uint8_t nameLabel[1 + nameLength];
+  nameLabel[0] = nameLength;
+  memcpy(&nameLabel[1], _name.c_str(), nameLength);
 
-  const byte ptrRecordEnd[] = {
-    0xc0, 0x0c
-  };
+  uint8_t fqdnLabels[sizeof(nameLabel) + sizeof(_DOMAIN)];
+  memcpy(&fqdnLabels[0], nameLabel, sizeof(nameLabel));
+  memcpy_P(&fqdnLabels[sizeof(nameLabel)], _DOMAIN, sizeof(_DOMAIN));
 
-  _mdnsSocket.write(ptrRecordStart, sizeof(ptrRecordStart));
-  _mdnsSocket.write(_name.c_str(), _name.length());
-  _mdnsSocket.write(ptrRecordEnd, sizeof(ptrRecordEnd));
+  uint8_t arduinoLabels[sizeof(nameLabel) + sizeof(_ARDUINO_DOMAIN)];
+  memcpy(&arduinoLabels[0], nameLabel, sizeof(nameLabel));
+  memcpy_P(&arduinoLabels[sizeof(nameLabel)], _ARDUINO_DOMAIN, sizeof(_ARDUINO_DOMAIN));
 
-  const byte txtRecord[] = {
-    0xc0, 0x2b,
-    0x00, 0x10, // TXT strings
-    0x80, 0x01, // class
-    0x00, 0x00, 0x11, 0x94, // TTL
-    0x00, (50 + BOARD_LENGTH),
+  // Build PTR record
+  uint8_t ptrRecord[sizeof(_PTR_RECORD) + sizeof(arduinoLabels)];
+  memcpy_P(&ptrRecord[0], _PTR_RECORD, sizeof(_PTR_RECORD));
+  memcpy(&ptrRecord[sizeof(_PTR_RECORD)], arduinoLabels, sizeof(arduinoLabels));
+
+  uint16_t ptrRecordDataLength = _htons(sizeof(arduinoLabels));
+  memcpy(&ptrRecord[sizeof(_PTR_RECORD) - 2], &ptrRecordDataLength, 2);
+
+  // Build SRV record
+  uint8_t srvRecord[sizeof(arduinoLabels) + sizeof(_SRV_RECORD) + sizeof(fqdnLabels)];
+  memcpy(&srvRecord[0], arduinoLabels, sizeof(arduinoLabels));
+  memcpy_P(&srvRecord[sizeof(arduinoLabels)], _SRV_RECORD, sizeof(_SRV_RECORD));
+  memcpy(&srvRecord[sizeof(arduinoLabels) + sizeof(_SRV_RECORD)], fqdnLabels, sizeof(fqdnLabels));
+
+  uint16_t srvRecordDataLength = _htons(6 + sizeof(fqdnLabels));
+  memcpy(&srvRecord[sizeof(arduinoLabels) + sizeof(_SRV_RECORD) - 8], &srvRecordDataLength, 2);
+
+  // Build TXT record
+  uint8_t txtRecordData[50 + BOARD_LENGTH] = {
     13,
     's', 's', 'h', '_', 'u', 'p', 'l', 'o', 'a', 'd', '=', 'n', 'o',
     12,
@@ -194,47 +350,48 @@ void WiFiOTAClass::pollMdns()
     (6 + BOARD_LENGTH),
     'b', 'o', 'a', 'r', 'd', '=',
   };
-  _mdnsSocket.write(txtRecord, sizeof(txtRecord));
-  _mdnsSocket.write((byte*)BOARD, BOARD_LENGTH);
+  memcpy(&txtRecordData[sizeof(txtRecordData) - BOARD_LENGTH], BOARD, BOARD_LENGTH);
 
-  const byte srvRecordStart[] = {
-    0xc0, 0x2b, 
-    0x00, 0x21, // SRV
-    0x80, 0x01, // class
-    0x00, 0x00, 0x00, 0x78, // TTL
-    0x00, (byte)(_name.length() + 9), // length
-    0x00, 0x00,
-    0x00, 0x00,
-    0xff, 0x00, // port
-    (byte)_name.length()
-  };
+  uint8_t txtRecord[sizeof(arduinoLabels) + sizeof(_TXT_RECORD) + sizeof(txtRecordData)];
+  memcpy(&txtRecord[0], arduinoLabels, sizeof(arduinoLabels));
+  memcpy_P(&txtRecord[sizeof(arduinoLabels)], _TXT_RECORD, sizeof(_TXT_RECORD));
+  memcpy(&txtRecord[sizeof(arduinoLabels) + sizeof(_TXT_RECORD)], txtRecordData, sizeof(txtRecordData));
 
-  const byte srvRecordEnd[] = {
-    0xc0, 0x1a
-  };
+  uint16_t txtRecordDataLength = _htons(sizeof(txtRecordData));
+  memcpy(&txtRecord[sizeof(arduinoLabels) + sizeof(_TXT_RECORD) - 2], &txtRecordDataLength, 2);
 
-  _mdnsSocket.write(srvRecordStart, sizeof(srvRecordStart));
-  _mdnsSocket.write(_name.c_str(), _name.length());
-  _mdnsSocket.write(srvRecordEnd, sizeof(srvRecordEnd));
+  // Build A record
+  uint8_t aRecord[sizeof(fqdnLabels) + sizeof(_A_RECORD)];
+  memcpy(&aRecord[0], fqdnLabels, sizeof(fqdnLabels));
+  memcpy_P(&aRecord[sizeof(fqdnLabels)], _A_RECORD, sizeof(_A_RECORD));
 
-  uint32_t localIp = WiFi.localIP();
+  uint32_t ipAddress = WiFi.localIP();
+  memcpy(&aRecord[sizeof(fqdnLabels) + sizeof(_A_RECORD) - 4], &ipAddress, 4);
 
-  byte aRecordNameOffset = sizeof(responseHeader) +
-                            sizeof(ptrRecordStart) + _name.length() + sizeof(ptrRecordEnd) + 
-                            sizeof(txtRecord) + BOARD_LENGTH +
-                            sizeof(srvRecordStart) - 1;
+  // Build NSEC record
+  uint8_t nsecRecord[sizeof(fqdnLabels) + sizeof(_NSEC_RECORD)];
+  memcpy(&nsecRecord[0], fqdnLabels, sizeof(fqdnLabels));
+  memcpy_P(&nsecRecord[sizeof(fqdnLabels)], _NSEC_RECORD, sizeof(_NSEC_RECORD));
 
-  byte aRecord[] = {
-    0xc0, aRecordNameOffset,
+   // Write packet
+  _mdnsSocket.beginPacket(IPAddress(224, 0, 0, 251), 5353);
 
-    0x00, 0x01, // A record
-    0x80, 0x01, // class
-    0x00, 0x00, 0x00, 0x78, // TTL
-    0x00, 0x04,
-    0xff, 0xff, 0xff, 0xff // IP
-  };
-  memcpy(&aRecord[sizeof(aRecord) - 4], &localIp, sizeof(localIp));
-  _mdnsSocket.write(aRecord, sizeof(aRecord));
+  if (requestQType == 0x000c) {
+    _mdnsSocket.write(_ARDUINO_SERVICE_RESPONSE_HEADER, sizeof(_ARDUINO_SERVICE_RESPONSE_HEADER));
+    _mdnsSocket.write(ptrRecord, sizeof(ptrRecord));
+    _mdnsSocket.write(srvRecord, sizeof(srvRecord));
+    _mdnsSocket.write(txtRecord, sizeof(txtRecord));
+    _mdnsSocket.write(aRecord, sizeof(aRecord));
+    _mdnsSocket.write(nsecRecord, sizeof(nsecRecord));
+  } else if (requestQType == 0x0001) {
+    _mdnsSocket.write(_ADDRESS_RESPONSE_HEADER, sizeof(_ADDRESS_RESPONSE_HEADER));
+    _mdnsSocket.write(aRecord, sizeof(aRecord));
+    _mdnsSocket.write(nsecRecord, sizeof(nsecRecord));
+  } else {
+    _mdnsSocket.write(_ADDRESS_RESPONSE_HEADER, sizeof(_ADDRESS_RESPONSE_HEADER));
+    _mdnsSocket.write(nsecRecord, sizeof(nsecRecord));
+    _mdnsSocket.write(aRecord, sizeof(aRecord));
+  }
 
   _mdnsSocket.endPacket();
 }
@@ -315,7 +472,7 @@ void WiFiOTAClass::pollServer()
 
       // apply the update
       _storage->apply();
-      
+
       while (true);
     } else {
 
